@@ -21,6 +21,7 @@ REGEXP_METACHARACTERS = /[-[\]{}()*+?.,\\^$|#\s]/g
 GENERIC_ARGUMENT_MATCHER_SOURCE = "(?: --(?:.+))"
 
 module.exports = (robot) ->
+  # Some startup vagaries that we'll need later
   slackHelper = null
   if robot.adapterName is 'slack'
     slackHelper = require('./slack-helper')
@@ -36,6 +37,8 @@ module.exports = (robot) ->
     robot.logger.error "The RPC_PRIVATE_KEY environment variable is not set; RPC commands are unknown."
     return
 
+  # An API to access the data in the brain, rather than using the brain
+  # directly.
   robot.assignedChatopsRpcUrlPrefixes = (url) ->
     robot.brain.data.rpc_endpoint_prefixes[url]
 
@@ -62,6 +65,9 @@ module.exports = (robot) ->
   robot.initializeRpc = () ->
     robot.brain.data.rpc_endpoints ||= {}
     robot.brain.data.rpc_endpoint_prefixes ||= {}
+
+  # Helper functions called by the listeners that actually fetch RPC endpoint
+  # data
 
   # Generate the nonce, timestamp, and signature for the given request body.
   authHeaders = (url, body) ->
