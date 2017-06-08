@@ -47,6 +47,12 @@ module.exports = (robot) ->
   robot.clearChatopsRpcPrefixForUrl = (url) ->
     delete robot.brain.data.rpc_endpoint_prefixes[url]
 
+  robot.rpcDataForUrl = (url) ->
+    return robot.rpcEndpointData()[url]
+
+  robot.rpcEndpointData = () ->
+    return robot.brain.data.rpc_endpoints
+
   # Generate the nonce, timestamp, and signature for the given request body.
   authHeaders = (url, body) ->
     nonce = crypto.randomBytes(32).toString('base64')
@@ -307,7 +313,7 @@ module.exports = (robot) ->
       header("Chatops-Signature", headers.signature).
       header("Accept", "application/json").
       get() (err, response, body) ->
-        endpoint = robot.brain.data.rpc_endpoints[url]
+        endpoint = robot.rpcDataForUrl(url)
         return cb?(false) unless endpoint? # this endpoint was deleted. it will go away completely the next time hubot restarts.
         if err || response.statusCode != 200
           if err
@@ -330,7 +336,7 @@ module.exports = (robot) ->
 
           addListeners(url, data)
           # endpoints will have been replaced
-          endpoint = robot.brain.data.rpc_endpoints[url]
+          endpoint = robot.rpcDataForUrl(url)
 
           length = Object.keys(data.methods).length
           noun = if length == 1 then "method" else "methods"
@@ -352,12 +358,12 @@ module.exports = (robot) ->
     , timeout
 
   fetchAllRpc = ->
-    for url, endpoint of robot.brain.data.rpc_endpoints
+    for url, endpoint of robot.rpcEndpointData()
       fetchRpc url
       setFetchRpcBackoff url, DEFAULT_FETCH_INTERVAL
 
   statusForUrl = (url) ->
-    endpoint = robot.brain.data.rpc_endpoints[url]
+    endpoint = robot.rpcDataForUrl(url)
     ago = if endpoint.updated_at? then timeAgo.ago(endpoint.updated_at) else "never"
     if robot.assignedChatopsRpcUrlPrefixes(url)?
       result = "#{url} (prefix: #{robot.assignedChatopsRpcUrlPrefixes(url)})"
@@ -365,27 +371,29 @@ module.exports = (robot) ->
       result = url
     "#{result} - #{ago} - #{endpoint.last_response}"
 
+
+  # This happens on hubot booting
   robot.brain.data.rpc_endpoints ||= {}
   robot.brain.data.rpc_endpoint_prefixes ||= {}
   fetchAllRpc()
 
+  # Listeners follow
   robot.respond /rpc list/, id: "rpc.list", (response) ->
-    endpoints = robot.brain.data.rpc_endpoints
     rows = ["Endpoint - Updated - Last response"]
-    for url, endpoint of endpoints
+    for url, endpoint of robot.rpcEndpointData()
       rows.push(statusForUrl(url))
     response.send rows.join "\n"
 
   robot.respond /rpc debug (\S+)/, id: "rpc.debug", (response) ->
     url = response.match[1]
-    message = JSON.stringify robot.brain.data.rpc_endpoints[url], null, 2
+    message = JSON.stringify robot.rpcDataForUrl(url), null, 2
     response.reply "Info for #{url}:"
     response.send message
 
   robot.respond /rpc set prefix (\S+) (.*)/, id: "rpc.setprefix", (response) ->
     url = response.match[1]
     prefix = response.match[2]
-    unless robot.brain.data.rpc_endpoints[url]?
+    unless robot.rpcDataForUrl(url)?
       return response.send "I'm not querying #{url} for chatops. Try #{robot.alias}rpc add #{url} to add it."
     if robot.urlForChatopsRpcPrefix(prefix)?
       return response.reply("Sorry, #{prefix} is already associated with #{robot.urlForChatopsRpcPrefix(prefix)}")
@@ -411,9 +419,9 @@ module.exports = (robot) ->
 
   robot.respond /rpc remove (\S+)/, id: "rpc.delete", (response) ->
     url = response.match[1]
-    unless robot.brain.data.rpc_endpoints[url]
+    unless robot.rpcDataForUrl(url)
       return response.reply("I didn't know about #{url} anyway.")
-    delete(robot.brain.data.rpc_endpoints[url])
+    delete(robot.rpcDataForUrl(url))
     robot.clearChatopsRpcPrefixForUrl(url)
     response.reply("I'll no longer poll or run commands from #{url}")
     rejectListenersFromUrl(url)
@@ -449,6 +457,6 @@ module.exports = (robot) ->
     responder.callback.executeAction(response, data)
 
   robot.respond /rpc (hup|reload)/i, id: "rpc.hup", (response) ->
-    for url, endpoint of robot.brain.data.rpc_endpoints
+    for url, endpoint of robot.rpcEndpointData()
       fetchRpc url
     response.send "Okay, I'm re-fetching all RPC endpoints for updates."
