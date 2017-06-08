@@ -41,7 +41,6 @@ describe '/rpc list', ->
       socket.on 'close', () =>
         delete @sockets[socketId]
 
-
   afterEach (done) ->
     @robot.shutdown()
     for _, socket of @sockets
