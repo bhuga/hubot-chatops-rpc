@@ -53,6 +53,9 @@ module.exports = (robot) ->
   robot.rpcEndpointData = () ->
     return robot.brain.data.rpc_endpoints
 
+  robot.setRpcDataForUrl = (url, responseData) ->
+    return robot.brain.data.rpc_endpoints[url] = responseData
+
   # Generate the nonce, timestamp, and signature for the given request body.
   authHeaders = (url, body) ->
     nonce = crypto.randomBytes(32).toString('base64')
@@ -276,7 +279,7 @@ module.exports = (robot) ->
       sendMessage(parsed.result)
 
   addListeners = (url, rpcResponseData) ->
-    robot.brain.data.rpc_endpoints[url] = rpcResponseData
+    robot.setRpcDataForUrl(url, rpcResponseData)
     rejectListenersFromUrl(url)
 
     # TODO: hubot respondPattern wants to make a regex object, which is
@@ -344,6 +347,7 @@ module.exports = (robot) ->
           endpoint.updated_at = new Date()
           return cb?(true)
         catch e
+          robot.logger.debug "Caught #{e} trying to parse RPC listing data for #{url}."
           endpoint.last_response = shortBodyMessage(response, body)
           endpoint.updated_at = new Date()
           return cb?(false)
@@ -411,10 +415,10 @@ module.exports = (robot) ->
     if prefix? and robot.urlForChatopsRpcPrefix(prefix)?
       return response.reply("Sorry, #{prefix} is already associated with #{robot.urlForChatopsRpcPrefix(prefix)}")
     response.reply("Okay, I'll poll #{url} for chatops.")
-    robot.brain.data.rpc_endpoints[url] = {}
+    robot.setRpcDataForUrl(url, {})
     robot.assignChatopsRpcUrlPrefix(url, prefix) if prefix?
     fetchRpc url, ->
-      response.send "#{url}: " + robot.brain.data.rpc_endpoints[url].last_response
+      response.send "#{url}: " + robot.rpcDataForUrl(url).last_response
     setFetchRpcBackoff url, DEFAULT_FETCH_INTERVAL
 
   robot.respond /rpc remove (\S+)/, id: "rpc.delete", (response) ->
