@@ -114,7 +114,14 @@ module.exports = (robot) ->
       result
     robot.listeners = listenersToKeep
 
-  # Anchor source to beginning and end of regex, prefix with 'hubot|/'
+  # This takes a source regex and does some complicated things to it:
+  #  * Anchor source to beginning and end of regex, so the given regex must be the whole input
+  #  * prefix with 'hubot' or the alias, such as . or /
+  #  * add a regex that lets generic --longform arguments be parsed
+  #  * Prefixes with the endpoint's prefix
+  #
+  # So /foo/ becomes something like this, albiet more complicated:
+  #    /^(hubot|/) myprefix foo(--something we capture)$/
   createSourceRegex = (source, hubotPrefix, commandPrefix) ->
     if source.indexOf("^") == 0
       source = source.slice(1)
@@ -131,6 +138,8 @@ module.exports = (robot) ->
     source += "$"
     return namedRegexp(source, "i")
 
+  # Adds a listener that responds to just the command prefix for the given url
+  # "hubot prefix" will respond with all of the commands from the endpoint.
   addHelpListener = (url, responseData, hubotPrefix) ->
     endpointPrefix = robot.assignedChatopsRpcUrlPrefixes(url)
     helpTrigger = endpointPrefix || responseData.namespace
@@ -152,6 +161,10 @@ module.exports = (robot) ->
 
     robot.listen matcher, metadata, responder
 
+  # Adds a listener for an individual command from the endpoint
+  # This is really hard to get through because hubot doesn't model commands,
+  # only listeners, keyed on regex. We add a ton of metadata to each command
+  # so that we can pull them out if they change with rejectListenersFromUrl
   addListener = (url, endpoint, name, opts, hubotPrefix) ->
     commandPrefix = robot.assignedChatopsRpcUrlPrefixes(url)
     robot.logger.debug("Registering RPC endpoint named '#{name}' with prefix #{commandPrefix}")
@@ -241,6 +254,9 @@ module.exports = (robot) ->
     robot.commands.push metadata.help
     robot.listen matcher, metadata, responder
 
+  # Send an error message when we fail to parse JSON or otherwise
+  # catastrophically fail. We trim to 300 characters, as 500 pages are often
+  # giant with embedded html/js/css
   sendRpcError = (response, error, error_response) ->
     sliced = error.slice(0, 300)
     robot.logger.error "Error in RPC request: #{sliced}"
@@ -249,6 +265,10 @@ module.exports = (robot) ->
     else
       response.send "Error: #{sliced}"
 
+  # Send a command result, ignoring empty strings.
+  #
+  # If we have a string, Slack limits messages to 8000 characters, so we post a
+  # snippet instead in that case. Thanks, slack.
   sendMessage = (response, message) ->
     # Not sure how to test this. our framework only supports testing responses,
     # how do we test that no response is sent?
