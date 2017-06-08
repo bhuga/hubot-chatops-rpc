@@ -410,7 +410,7 @@ module.exports = (robot) ->
       response.send "#{url}: " + robot.brain.data.rpc_endpoints[url].last_response
     setFetchRpcBackoff url, DEFAULT_FETCH_INTERVAL
 
-  robot.respond /rpc delete (\S+)/, id: "rpc.delete", (response) ->
+  robot.respond /rpc remove (\S+)/, id: "rpc.delete", (response) ->
     url = response.match[1]
 
     if robot.brain.data.rpc_endpoints[url]

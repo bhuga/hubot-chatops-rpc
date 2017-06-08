@@ -322,7 +322,7 @@ describe '/rpc list', ->
             assert.include response, "foo response!"
             helper.converse @robot, @user, "/rpc add https://example.dev/_chatops --prefix dat-prefix", (envelope, response) =>
               assert.include response, "Sorry, dat-prefix is already associated with #{@chatopsUrl}"
-              helper.converse @robot, @user, "/rpc delete #{@chatopsUrl}", (envelope, response) =>
+              helper.converse @robot, @user, "/rpc remove #{@chatopsUrl}", (envelope, response) =>
                 assert.include response, "I'll no longer poll or run commands from #{@chatopsUrl}"
                 helper.converse @robot, @user, "/rpc add https://example.dev/_chatops --prefix dat-prefix", (envelope, response) =>
                   assert.include response, "Okay, I'll poll https://example.dev/_chatops for chatops."
