@@ -230,9 +230,6 @@ module.exports = (robot) ->
           robot.logger.warning "RPC error message=#{parsed.error.message}"
           # Was an error, just show the message
           sendMessage(response, parsed.error.message)
-        else if parsed.title or parsed.image_url
-          # Looks like a rich reponse message
-          sendRichMessage(response, parsed)
         else if typeof parsed.result is "undefined"
           message = "Invalid response, missing result (HTTP code: #{res.statusCode})"
           sendRpcError(response, message, error_response)
@@ -283,27 +280,6 @@ module.exports = (robot) ->
     else
       robot.logger.debug "sendMessage: plain"
       response.send message
-
-  sendRichMessage = (response, parsed) ->
-    # For now we only support rich results with image_urls
-    if robot.adapterName is 'slack' and parsed.image_url
-      robot.logger.debug "sendRichMessage: slack.attachment"
-      msgData =
-        text: ""
-        attachments: [
-          {
-            fallback: parsed.image_url
-            title: parsed.title
-            title_link: parsed.title_link
-            color: parsed.color
-            image_url: parsed.image_url
-            text: ""
-          }
-        ]
-      response.send msgData
-    else
-      robot.logger.debug "sendRichMessage: failback to plain"
-      sendMessage(parsed.result)
 
   addListeners = (url, rpcResponseData) ->
     robot.setRpcDataForUrl(url, rpcResponseData)
