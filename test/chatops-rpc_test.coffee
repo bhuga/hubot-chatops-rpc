@@ -29,7 +29,6 @@ describe '/rpc list', ->
       @robot = helper.robot()
       @user = helper.testUser @robot
       @robot.adapter.on 'connected', ->
-        console.log("loading script")
         @robot.loadFile helper.SCRIPTS_PATH, "chatops-rpc.coffee"
         @robot.brain.emit 'loaded'
         done()
