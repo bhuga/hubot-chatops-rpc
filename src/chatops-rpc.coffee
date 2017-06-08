@@ -385,14 +385,13 @@ module.exports = (robot) ->
   robot.respond /rpc set prefix (\S+) (.*)/, id: "rpc.setprefix", (response) ->
     url = response.match[1]
     prefix = response.match[2]
-    if robot.brain.data.rpc_endpoints[url]?
-      if robot.urlForChatopsRpcPrefix(prefix)?
-        return response.reply("Sorry, #{prefix} is already associated with #{robot.urlForChatopsRpcPrefix(prefix)}")
-      robot.assignChatopsRpcUrlPrefix(url, prefix)
-      fetchRpc url, ->
-        response.send "Okay, I'll use '#{prefix}' as a prefix for #{url}"
-    else
-      response.send "I'm not querying #{url} for chatops. Try #{robot.alias}rpc add #{url} to add it."
+    unless robot.brain.data.rpc_endpoints[url]?
+      return response.send "I'm not querying #{url} for chatops. Try #{robot.alias}rpc add #{url} to add it."
+    if robot.urlForChatopsRpcPrefix(prefix)?
+      return response.reply("Sorry, #{prefix} is already associated with #{robot.urlForChatopsRpcPrefix(prefix)}")
+    robot.assignChatopsRpcUrlPrefix(url, prefix)
+    fetchRpc url, ->
+      response.send "Okay, I'll use '#{prefix}' as a prefix for #{url}"
 
   robot.respond new RegExp("rpc add (\\S+)(#{GENERIC_ARGUMENT_MATCHER_SOURCE})*?"), id: "rpc.add", (response) ->
     url = response.match[1]
@@ -412,14 +411,12 @@ module.exports = (robot) ->
 
   robot.respond /rpc remove (\S+)/, id: "rpc.delete", (response) ->
     url = response.match[1]
-
-    if robot.brain.data.rpc_endpoints[url]
-      delete(robot.brain.data.rpc_endpoints[url])
-      robot.clearChatopsRpcPrefixForUrl(url)
-      response.reply("I'll no longer poll or run commands from #{url}")
-      rejectListenersFromUrl(url)
-    else
-      response.reply("I didn't know about #{url} anyway.")
+    unless robot.brain.data.rpc_endpoints[url]
+      return response.reply("I didn't know about #{url} anyway.")
+    delete(robot.brain.data.rpc_endpoints[url])
+    robot.clearChatopsRpcPrefixForUrl(url)
+    response.reply("I'll no longer poll or run commands from #{url}")
+    rejectListenersFromUrl(url)
 
   robot.respond /rpc (?:wtf|what happens for) (.*)/, id: "rpc.wtf", (response) ->
     text = response.match[1]
@@ -427,15 +424,14 @@ module.exports = (robot) ->
       # Only select for RPC chatops.
       return false unless listener.options.source_regex?
       listener.matcher({text: text})
+    unless listener?
+      return response.send "That won't launch any chatops (but it might launch a regular hubot script, github/shell command, nuclear missile, or land invasion of russia in winter)."
 
-    if listener?
-      room = get_room_name(robot, response.message.user.room)
-      data = listener.callback.extractData(text, room, response.message.user.name)
-      data.method = listener.options.method
-      data = JSON.stringify(data)
-      response.send "I found a chatop matching that, #{listener.options.source_regex}, from #{listener.options.origin} (`.#{listener.options.namespace}`).\nI'm posting this JSON to #{listener.callback.methodUrl}, using _:RPC_PRIVATE_KEY as authorization:\n#{data}"
-    else
-      response.send "That won't launch any chatops (but it might launch a regular hubot script, github/shell command, nuclear missile, or land invasion of russia in winter)."
+    room = get_room_name(robot, response.message.user.room)
+    data = listener.callback.extractData(text, room, response.message.user.name)
+    data.method = listener.options.method
+    data = JSON.stringify(data)
+    response.send "I found a chatop matching that, #{listener.options.source_regex}, from #{listener.options.origin} (`.#{listener.options.namespace}`).\nI'm posting this JSON to #{listener.callback.methodUrl}, using _:RPC_PRIVATE_KEY as authorization:\n#{data}"
 
   rawRegex = "rpc raw ([^\\s\\.]+\\.[^\\s\\.]+)(#{GENERIC_ARGUMENT_MATCHER_SOURCE})*"
   robot.respond new RegExp(rawRegex), id: "rpc.raw", (response) ->
@@ -444,15 +440,13 @@ module.exports = (robot) ->
     [unused, args] = extractGenericArguments(response.message.text)
     responder = _.find robot.listeners, (listener) ->
       listener.options.id == id
-    if responder?
-      data = {}
-      data.user = response.message.user.name
-      data.room_id = "#" + get_room_name(robot, response.message.user.room)
-      data.params = args
-
-      responder.callback.executeAction(response, data)
-    else
-      response.reply "I couldn't find a method called #{id}"
+    unless responder?
+      return response.reply "I couldn't find a method called #{id}"
+    data = {}
+    data.user = response.message.user.name
+    data.room_id = "#" + get_room_name(robot, response.message.user.room)
+    data.params = args
+    responder.callback.executeAction(response, data)
 
   robot.respond /rpc (hup|reload)/i, id: "rpc.hup", (response) ->
     for url, endpoint of robot.brain.data.rpc_endpoints
