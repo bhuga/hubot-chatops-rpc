@@ -56,6 +56,10 @@ module.exports = (robot) ->
   robot.setRpcDataForUrl = (url, responseData) ->
     return robot.brain.data.rpc_endpoints[url] = responseData
 
+  robot.initializeRpc = () ->
+    robot.brain.data.rpc_endpoints ||= {}
+    robot.brain.data.rpc_endpoint_prefixes ||= {}
+
   # Generate the nonce, timestamp, and signature for the given request body.
   authHeaders = (url, body) ->
     nonce = crypto.randomBytes(32).toString('base64')
@@ -377,8 +381,7 @@ module.exports = (robot) ->
 
 
   # This happens on hubot booting
-  robot.brain.data.rpc_endpoints ||= {}
-  robot.brain.data.rpc_endpoint_prefixes ||= {}
+  robot.initializeRpc()
   fetchAllRpc()
 
   # Listeners follow
