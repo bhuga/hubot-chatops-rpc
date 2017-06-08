@@ -15,13 +15,16 @@ namedRegexp = require("named-js-regexp")
 timeAgo = require("time-ago")()
 crypto = require 'crypto'
 
-
 DEFAULT_FETCH_INTERVAL = 10 * 1000  # 10 seconds
 MAX_FETCH_INTERVAL = 60 * 60 * 1000 # 1 hour
 REGEXP_METACHARACTERS = /[-[\]{}()*+?.,\\^$|#\s]/g
 GENERIC_ARGUMENT_MATCHER_SOURCE = "(?: --(?:.+))"
 
 module.exports = (robot) ->
+  slackHelper = null
+  if robot.adapterName is 'slack'
+    slackHelper = require('./slack-helper')
+
   get_room_name = (robot, room_id) =>
     return room_id
 
@@ -254,7 +257,7 @@ module.exports = (robot) ->
       robot.logger.debug "sendMessage: slack snippet"
       # this is challenging to test because its adapter-specific. Alas.
       channel = get_room_name(robot, response.envelope.room)
-      robot.postSnippet channel, message, (result) ->
+      slackHelper.postSnippet channel, message, (result) ->
         unless result.ok
           response.send "Couldn't post a snippet of that long message: #{JSON.stringify(result)}"
     else
