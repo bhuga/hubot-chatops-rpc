@@ -277,7 +277,7 @@ describe '/rpc list', ->
           data = '{"user":"TestUser1","params":{"app":"foobar"},"room_id":"TestRoom","method":"wcid"}'
           assert.include response, "I found a chatop matching that, (?:where can i deploy|wcid)(?: (?<app>\\S+))?, from #{@chatopsUrl} (`.deploy`).\nI'm posting this JSON to #{@chatopsUrl}/wcid, using _:RPC_PRIVATE_KEY as authorization:\n#{data}"
           helper.converse @robot, @user, "/rpc what happens for absolutely nothing", (envelope, response) =>
-            assert.include response, "That won't launch any chatops (but it might launch a regular hubot script, github/shell command, nuclear missile, or land invasion of russia in winter)."
+            assert.include response, "That won't launch any chatops (but it might launch a regular hubot script, nuclear missile, or land invasion of russia in winter)."
             done(error)
 
   it "sets a server's prefix", (done) ->

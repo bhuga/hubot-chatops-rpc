@@ -281,7 +281,9 @@ module.exports = (robot) ->
       robot.logger.debug "sendMessage: plain"
       response.send message
 
-  addListeners = (url, rpcResponseData) ->
+  # Given some new response data, update the endpoint and update all
+  # the associated listeners.
+  updateEndpointWithFetchedData = (url, rpcResponseData) ->
     robot.setRpcDataForUrl(url, rpcResponseData)
     rejectListenersFromUrl(url)
 
@@ -290,8 +292,7 @@ module.exports = (robot) ->
     # named groups. Ideally, hubot would provide us just access to the 'string'
     # portion of the prefix command and not create a RegExp, as named groups
     # will cause a compilation error in node.
-    # Accordingly, these regexes and the prefixes below are stolen from
-    # robot.coffee in hubot, but used slightly differently.
+    # The workaround is to copy the string regex sources here.
     regexEscapedRobotName = robot.name.replace(REGEXP_METACHARACTERS, '\\$&')
     alias = if robot.alias then robot.alias.replace(REGEXP_METACHARACTERS, '\\$&') else null
 
@@ -340,7 +341,7 @@ module.exports = (robot) ->
             endpoint.last_response = "#{url} claims to be chatops RPC version 2. Versions 2 and up require adding with a prefix, like .rpc add #{url} --prefix <something>."
             return cb?(false)
 
-          addListeners(url, data)
+          updateEndpointWithFetchedData(url, data)
           # endpoints will have been replaced
           endpoint = robot.rpcDataForUrl(url)
 
@@ -369,6 +370,9 @@ module.exports = (robot) ->
       fetchRpc url
       setFetchRpcBackoff url, DEFAULT_FETCH_INTERVAL
 
+  # A human-readable description of a given URL's RPC response status.
+  # Looks something like:
+  #   https://example.org (prefix: foo) - 8 seconds ago - Found 3 methods.
   statusForUrl = (url) ->
     endpoint = robot.rpcDataForUrl(url)
     ago = if endpoint.updated_at? then timeAgo.ago(endpoint.updated_at) else "never"
@@ -432,6 +436,7 @@ module.exports = (robot) ->
     response.reply("I'll no longer poll or run commands from #{url}")
     rejectListenersFromUrl(url)
 
+  # Just a little helper to see what data will be posted where for a given regex
   robot.respond /rpc (?:wtf|what happens for) (.*)/, id: "rpc.wtf", (response) ->
     text = response.match[1]
     listener = _.find robot.listeners, (listener) ->
@@ -439,7 +444,7 @@ module.exports = (robot) ->
       return false unless listener.options.source_regex?
       listener.matcher({text: text})
     unless listener?
-      return response.send "That won't launch any chatops (but it might launch a regular hubot script, github/shell command, nuclear missile, or land invasion of russia in winter)."
+      return response.send "That won't launch any chatops (but it might launch a regular hubot script, nuclear missile, or land invasion of russia in winter)."
 
     room = get_room_name(robot, response.message.user.room)
     data = listener.callback.extractData(text, room, response.message.user.name)
@@ -447,6 +452,8 @@ module.exports = (robot) ->
     data = JSON.stringify(data)
     response.send "I found a chatop matching that, #{listener.options.source_regex}, from #{listener.options.origin} (`.#{listener.options.namespace}`).\nI'm posting this JSON to #{listener.callback.methodUrl}, using _:RPC_PRIVATE_KEY as authorization:\n#{data}"
 
+  # For debugging purposes, hubot rpc raw is available, where all arguments will
+  # be sent as --longform instead of parsing the regex.
   rawRegex = "rpc raw ([^\\s\\.]+\\.[^\\s\\.]+)(#{GENERIC_ARGUMENT_MATCHER_SOURCE})*"
   robot.respond new RegExp(rawRegex), id: "rpc.raw", (response) ->
     id = response.match[1]
