@@ -4,6 +4,10 @@ http   = require 'http'
 crypto = require 'crypto'
 fs     = require 'fs'
 
+# I apologize for the state of this file, dear programmer. We need to use
+# some non-standard test helpers since all of the chatops RPC fetching happens
+# asynchronously inside the script. The result isn't ideal, but it's tested.
+
 describe '/rpc list', ->
   beforeEach (done) ->
     process.env.RPC_PRIVATE_KEY = fs.readFileSync("test/hubot-test.pem")
