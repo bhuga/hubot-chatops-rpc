@@ -1,16 +1,16 @@
 {
   "name": "hubot-chatops-rpc",
   "description": "Easily add RPC endpoints to your hubot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Ben Lavender <blavender@gmail.com>",
   "license": "MIT",
   "keywords": "RPC chatops",
   "repository": {
     "type": "git",
-    "url": "git://github.com/hubot-scripts/hubot-chatops-rpc.git"
+    "url": "git://github.com/bhuga/hubot-chatops-rpc.git"
   },
   "bugs": {
-    "url": "https://github.com/hubot-scripts/hubot-chatops-rpc/issues"
+    "url": "https://github.com/bhuga/hubot-chatops-rpc/issues"
   },
   "dependencies": {
     "named-js-regexp": "1.3.1",
