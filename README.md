@@ -216,8 +216,8 @@ string to be signed is:
 `https://example.com/_chatops\nabc123.2017-05-11T19:15:23Z\n{"method": "foo"}`
 
 The signature header starts with the word `Signature`, followed by whitespace,
-followed by comma-separated key-value pairs separated by an `=`. Each
-value is closed with double quotes. Keys must be all lowercase.
+followed by comma-separated key-value pairs separated by an `=`. Keys must 
+be all lowercase.
 
  * `keyid`: An implementation-specific key identifier that servers can use to
  determine which private key signed this request.
@@ -225,7 +225,7 @@ value is closed with double quotes. Keys must be all lowercase.
 
 An example signature header would be:
 
-`Chatops-Signature: Signature keyid="rsakey1",signature="<base64-encoded-signature>"`
+`Chatops-Signature: Signature keyid=rsakey1,signature=<base64-encoded-signature>`
 
 #### Authentication
 
