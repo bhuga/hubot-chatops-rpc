@@ -216,7 +216,7 @@ string to be signed is:
 `https://example.com/_chatops\nabc123.2017-05-11T19:15:23Z\n{"method": "foo"}`
 
 The signature header starts with the word `Signature`, followed by whitespace,
-followed by comma-separated key-value pairs separated by an `=`. Keys must 
+followed by comma-separated key-value pairs separated by an `=`. Keys must
 be all lowercase.
 
  * `keyid`: An implementation-specific key identifier that servers can use to
@@ -289,7 +289,7 @@ ssh-keygen -t rsa -b 4096 -f crpc
 ```
 
 This will create two files, `crpc` and `crpc.pub`. Use the contents of the
-`crpc` file as an environment variable, `CHATOPS_PRIVATE_KEY`. `crpc.pub`
+`crpc` file as an environment variable, `RPC_PRIVATE_KEY`. `crpc.pub`
 contains a public key for use by servers.
 
 ## NPM Module
