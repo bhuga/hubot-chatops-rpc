@@ -266,7 +266,7 @@ The version of the ChatopsRPC protocol in use by a server is given as the
 
 ## Server Implementations
 
- * [chatops-controller]() makes it easy to add CRPC endpoints to rails applications.
+ * [chatops-controller](https://github.com/github/chatops-controller) makes it easy to add CRPC endpoints to rails applications.
 
 ## Installation
 
