@@ -285,7 +285,7 @@ Then add **hubot-chatops-rpc** to your `external-scripts.json`:
 Create a public/private key pair for authentication:
 
 ```
-ssh-keygen -t rsa -b 4096 -f crpc
+ssh-keygen -m PEM -t rsa -b 4096 -f crpc
 ```
 
 This will create two files, `crpc` and `crpc.pub`. Use the contents of the
